@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Virus Diag – Aide au diagnostic</title>
+<style>
+  :root { --bg:#f4f6fb; --card:#fff; --txt:#1f2937; --muted:#6b7280; --acc:#2563eb; --bad:#dc2626; --good:#16a34a; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--txt); }
+  header { background:var(--acc); color:#fff; padding:1.2rem 1rem; text-align:center; }
+  header h1 { margin:0; font-size:1.4rem; } header p { margin:.3rem 0 0; opacity:.85; font-size:.9rem; }
+  main { max-width:900px; margin:1.5rem auto; padding:0 1rem; display:grid; gap:1.2rem; grid-template-columns:3fr 2fr; }
+  @media (max-width:760px){ main{ grid-template-columns:1fr; } }
+  .card { background:var(--card); border-radius:12px; padding:1.2rem; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  h2 { margin:0 0 .8rem; font-size:1.1rem; }
+  label { display:block; font-size:.85rem; color:var(--muted); margin:.7rem 0 .2rem; }
+  input[type=number], select { width:100%; padding:.55rem .6rem; border:1px solid #d1d5db; border-radius:8px; font-size:1rem; }
+  .checks { display:flex; gap:1.5rem; margin-top:.9rem; }
+  .checks label { display:flex; align-items:center; gap:.4rem; margin:0; color:var(--txt); font-size:.95rem; }
+  button { margin-top:1.2rem; width:100%; padding:.75rem; border:0; border-radius:8px; background:var(--acc); color:#fff; font-size:1rem; cursor:pointer; }
+  button:hover { filter:brightness(1.1); }
+  .result { text-align:center; padding:1rem; border-radius:10px; margin-bottom:1rem; }
+  .result.Infecté { background:#fee2e2; color:var(--bad); } .result.Sain { background:#dcfce7; color:var(--good); }
+  .result strong { display:block; font-size:1.8rem; }
+  .bar { height:10px; background:#e5e7eb; border-radius:99px; overflow:hidden; margin-top:.6rem; }
+  .bar span { display:block; height:100%; background:currentColor; }
+  .err { background:#fef3c7; color:#92400e; padding:.7rem; border-radius:8px; margin-bottom:1rem; }
+  table { width:100%; border-collapse:collapse; font-size:.9rem; }
+  td,th { padding:.35rem .2rem; text-align:left; border-bottom:1px solid #eee; } th { color:var(--muted); font-weight:500; }
+  .note { font-size:.75rem; color:var(--muted); margin-top:.8rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🦠 Virus Diag</h1>
+  <p>Aide au diagnostic : patient infecté ou sain</p>
+</header>
+<main>
+  <section class="card">
+    <h2>Données du patient</h2>
+    {% if erreur %}<div class="err">{{ erreur }}</div>{% endif %}
+    {% if resultat %}
+    <div class="result {{ resultat.diagnostic }}">
+      <strong>{{ resultat.diagnostic }}</strong>
+      Probabilité d'infection : {{ resultat.proba }} %
+      <div class="bar"><span style="width:{{ resultat.proba }}%"></span></div>
+    </div>
+    {% endif %}
+    <form method="post">
+      <label for="modele">Modèle</label>
+      <select id="modele" name="modele">
+        {% for nom in modeles %}<option value="{{ nom }}" {{ 'selected' if nom == choix }}>{{ nom }}</option>{% endfor %}
+      </select>
+      {% for nom, lib, typ, mn, mx, step, _ in champs %}
+        <label for="{{ nom }}">{{ lib }}</label>
+        <input type="number" id="{{ nom }}" name="{{ nom }}" min="{{ mn }}" max="{{ mx }}" step="{{ step }}" value="{{ valeurs[nom] }}" required>
+      {% endfor %}
+      <div class="checks">
+        {% for nom, lib in booleens %}
+          <label><input type="checkbox" name="{{ nom }}" {{ 'checked' if valeurs[nom] }}> {{ lib }}</label>
+        {% endfor %}
+      </div>
+      <button type="submit">Diagnostiquer</button>
+    </form>
+  </section>
+
+  <aside class="card">
+    <h2>Performances des modèles</h2>
+    <table>
+      <tr><th>Modèle</th><th>Acc.</th><th>Préc.</th><th>Rappel</th><th>F1</th></tr>
+      {% for nom, m in modeles.items() %}
+      <tr><td>{{ nom }}</td>
+        <td>{{ '%.2f'|format(m.metrics.accuracy) }}</td><td>{{ '%.2f'|format(m.metrics.precision) }}</td>
+        <td>{{ '%.2f'|format(m.metrics.recall) }}</td><td>{{ '%.2f'|format(m.metrics.f1) }}</td></tr>
+      {% endfor %}
+    </table>
+    <p class="note">Évaluées sur 20 % du jeu de données synthétique. Outil pédagogique : ne remplace pas un avis médical.</p>
+  </aside>
+</main>
+</body>
+</html>
